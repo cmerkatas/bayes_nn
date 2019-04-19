@@ -65,7 +65,7 @@ Random.seed!(12345)
 @time for i in 2:nsamples
     samples[i,:] = HMC(xs, ts, samples[i-1,:], network_shape, precisions[i - 1,:], [] , 0.05, 4)
     precisions[i,:] = update_precisions(xs, ts, samples[i,:], network_shape, hypers, hyper_tau)
-    lp[i] = log_posterior(xs, ts, samples[i-1,:], network_shape, precisions[i-1,:], [])
+    lp[i] = log_posterior(xs, ts, samples[i-1,:], network_shape, precisions[i,:], [])
     if mod(i,1000).==0
         print("MCMC iterations: $i\n")
     end
