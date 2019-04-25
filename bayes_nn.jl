@@ -1,6 +1,3 @@
-using Flux, Distributions, Random
-using CSV, DataFrames, Plots
-using Turing, StatsPlots, KernelDensity
 ### data normalizer
 normalize_data(x) = (x .- mean(x)) ./ std(x);
 
@@ -40,33 +37,24 @@ end;
 
 
 # define log posterior density for classification or regression
-function log_posterior(x, y, θ::AbstractVector, network_shape::AbstractVector, precisions::Array{Float64}, τ)
-  if isempty(τ)
-    log_like = -sum(Flux.binarycrossentropy.(nn_forward(x',θ,network_shape), y'))
-    weights, biases = unpack(θ, network_shape)
-    for layer in 1:1:size(weights)[1]
-      θ = vcat(sqrt(precisions[layer]) .* weights[layer][:], sqrt(precisions[layer]) .* biases[layer][:])
-    end
-    return -(log_like - 0.5norm(θ,2)^2)
-  else
-    n = length(y)
-    log_like = 0.5n * log(τ) - 0.5n * log(2π) - 0.5τ * Flux.mse(y, nn_forward(x', θ, network_shape))
-    weights, biases = unpack(θ, network_shape)
-    for layer in 1:1:size(weights)[1]
-      θ = vcat(sqrt(precisions[layer]) .* weights[layer][:], sqrt(precisions[layer]) .* biases[layer][:])
-    end
-    return -(log_like - 0.5norm(θ,2)^2)
+function log_posterior(x, y, θ::AbstractVector, network_shape::AbstractVector, precisions::Array{Float64})
+  log_like = -sum(Flux.binarycrossentropy.(nn_forward(x',θ,network_shape), y'))
+  weights, biases = unpack(θ, network_shape)
+  theta = Float64[]
+  for layer in 1:1:size(weights)[1]
+    temp = vcat(theta, sqrt(precisions[layer]) .* weights[layer][:], sqrt(precisions[layer]) .* biases[layer][:])
   end
-end;
+  return -(log_like - 0.5norm(theta,2)^2)
+end
 
 # gradients of the log posterior density with respect to parameters
-function ∇log_posterior(x, y, θ::AbstractVector, network_shape::AbstractVector, precisions::Array{Float64}, τ)
-  temp = Tracker.gradient(() -> log_posterior(x, y, θ, network_shape, precisions, τ), Flux.params(θ))
+function ∇log_posterior(x, y, θ::AbstractVector, network_shape::AbstractVector, precisions::Array{Float64})
+  temp = Tracker.gradient(() -> log_posterior(x, y, θ, network_shape, precisions), Flux.params(θ))
   return collect(temp[θ])
 end
 
 # function for a single iteration of the Hamiltonian monte carlo algorithm
-function HMC(x, y, current_q, network_shape::AbstractVector, precisions::Array{Float64}, τ, ϵ = .1, L = 10)
+function HMC(x, y, current_q, network_shape::AbstractVector, precisions::Array{Float64}, ϵ = .1, L = 10)
   q = current_q
   p = rand(Normal(0, 1), length(q))  # independent standard normal variates
   current_p = p
@@ -75,37 +63,36 @@ function HMC(x, y, current_q, network_shape::AbstractVector, precisions::Array{F
   q = param(q)
 
   # Make a half step for momentum at the beginning
-  p = p .- ϵ .* ∇log_posterior(x, y, q, network_shape, precisions, τ) ./ 2
+  p = p .- ϵ .* ∇log_posterior(x, y, q, network_shape, precisions) ./ 2
   # Alternate full steps for position and momentum
   for i in 1:1:L
     # Make a full step for the position
     q = q .+ ϵ .* p
     # Make a full step for the momentum, except at end of trajectory
     if i != L
-      p = p .- ϵ .* ∇log_posterior(x, y, q, network_shape, precisions, τ)
+      p = p .- ϵ .* ∇log_posterior(x, y, q, network_shape, precisions)
     end
   end
 
   # Make a half step for momentum at the end.
 
-  p = p .- ϵ * ∇log_posterior(x, y, q, network_shape, precisions, τ) ./ 2
+  p = p .- ϵ * ∇log_posterior(x, y, q, network_shape, precisions) ./ 2
   # Negate momentum at end of trajectory to make the proposal symmetric
   p = -p
   # Evaluate potential and kinetic energies at start and end of trajectory
-  current_U = log_posterior(x, y, current_q, network_shape, precisions, τ)
+  current_U = log_posterior(x, y, current_q, network_shape, precisions)
   current_K = norm(current_p,2)^2 ./ 2
-  proposed_U = log_posterior(x, y, q, network_shape, precisions, τ)
+  proposed_U = log_posterior(x, y, q, network_shape, precisions)
   proposed_K = norm(p,2)^2 ./ 2
   # Accept or reject the state at end of trajectory, returning either
   # the position at the end of the trajectory or the initial position
   if log(rand()) < current_U - proposed_U + current_K - proposed_K
-    # acc <<- acc + 1
     current_q = q # accept
   end
   return collect(current_q)
 end
 
-function update_precisions(x, y, θ::AbstractVector, network_shape::AbstractVector, hyperparams::Array{Float64,2}, hyper_tau=[])
+function update_precisions(x, y, θ::AbstractVector, network_shape::AbstractVector, hyperparams::Array{Float64,2})
   weights, biases = unpack(θ, network_shape)
   nlayers = size(weights)[1]
   precisions = zeros(nlayers)
@@ -115,14 +102,7 @@ function update_precisions(x, y, θ::AbstractVector, network_shape::AbstractVect
     beta_star = hyperparams[layer, 2] + 0.5norm(layer_weights,2)^2
     precisions[layer] = rand(Gamma(alpha_star, 1/beta_star))
   end
-  if isempty(hyper_tau)
-    return precisions
-  else
-    alpha_τ = hyper_tau[1] + 0.5size(x)[1]
-    beta_τ = hyper_tau[2] #+ 0.5Flux.mse(y, nn_forward(x', θ, network_shape))
-    tau = rand(Gamma(alpha_τ, 1/beta_τ))
-    return precisions, tau
-  end
+  return precisions
 end
 
 
@@ -137,5 +117,5 @@ end
 # multiple weights.
 # Originally taken from turing.ml
 function nn_predict(x, theta, num, network_shape)
-    mean([nn_forward(x', theta[i,:], network_shape) for i in 1:1000:num])
+    mean([nn_forward(x, theta[i,:], network_shape) for i in 1:1000:num])
 end;

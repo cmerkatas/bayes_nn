@@ -53,19 +53,17 @@ nsamples=5000
 
 samples = rand(Normal(0, sig), nsamples, num_params)
 
-
 lp=zeros(nsamples)
 precisions = ones(nsamples, size(network_shape)[1])
-hypers = [0.001 0.001;
-          0.001 0.001;
-          0.001 0.001]
-hyper_tau = []
-Random.seed!(12345)
+hypers = [0.01 0.01;
+          0.01 0.01;
+          0.01 0.01]
 
+Random.seed!(12345)
 @time for i in 2:nsamples
-    samples[i,:] = HMC(xs, ts, samples[i-1,:], network_shape, precisions[i - 1,:], [] , 0.05, 4)
-    precisions[i,:] = update_precisions(xs, ts, samples[i,:], network_shape, hypers, hyper_tau)
-    lp[i] = log_posterior(xs, ts, samples[i-1,:], network_shape, precisions[i,:], [])
+    samples[i,:] = HMC(xs, ts, samples[i-1,:], network_shape, precisions[i - 1,:], 0.05, 4)
+    precisions[i,:] = update_precisions(xs, ts, samples[i,:], network_shape, hypers)
+    lp[i] = log_posterior(xs, ts, samples[i,:], network_shape, precisions[i,:])
     if mod(i,1000).==0
         print("MCMC iterations: $i\n")
     end
@@ -75,5 +73,15 @@ plot_data()
 
 x_range = collect(range(-6,stop=6,length=25))
 y_range = collect(range(-6,stop=6,length=25))
-Z = [nn_predict([x, y]', samples, nsamples, network_shape)[1] for x=x_range, y=y_range]
+Z = [nn_predict([x, y], samples, nsamples, network_shape)[1] for x=x_range, y=y_range]
 contour!(x_range, y_range, Z)
+
+
+# Number of iterations to plot.
+n_end = 500
+
+anim = @gif for i=1:n_end
+    plot_data()
+    Z = [nn_forward([x, y], samples[i,:], network_shape)[1] for x=x_range, y=y_range]
+    contour!(x_range, y_range, Z, title="Iteration $i", clim = (0,1))
+end every 5;
