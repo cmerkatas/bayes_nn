@@ -42,7 +42,7 @@ function log_posterior(x, y, θ::AbstractVector, network_shape::AbstractVector, 
   weights, biases = unpack(θ, network_shape)
   theta = Float64[]
   for layer in 1:1:size(weights)[1]
-    temp = vcat(theta, sqrt(precisions[layer]) .* weights[layer][:], sqrt(precisions[layer]) .* biases[layer][:])
+    theta = vcat(theta, sqrt(precisions[layer]) .* weights[layer][:], sqrt(precisions[layer]) .* biases[layer][:])
   end
   return -(log_like - 0.5norm(theta,2)^2)
 end
