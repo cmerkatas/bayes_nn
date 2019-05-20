@@ -1,7 +1,6 @@
 using Flux, Distributions, Random
-using CSV, DataFrames, Plots
-using StatsPlots, KernelDensity
-using LinearAlgebra
+using Plots, LinearAlgebra
+
 
 include("bayes_nn.jl")
 # An example from Turing.jl

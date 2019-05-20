@@ -49,6 +49,7 @@ end
 
 # gradients of the log posterior density with respect to parameters
 function ∇log_posterior(x, y, θ::AbstractVector, network_shape::AbstractVector, precisions::Array{Float64})
+  θ=param(θ)
   temp = Tracker.gradient(() -> log_posterior(x, y, θ, network_shape, precisions), Flux.params(θ))
   return collect(temp[θ])
 end
@@ -60,7 +61,7 @@ function HMC(x, y, current_q, network_shape::AbstractVector, precisions::Array{F
   current_p = p
 
   ## prepare gradients
-  q = param(q)
+  #q = param(q)
 
   # Make a half step for momentum at the beginning
   p = p .- ϵ .* ∇log_posterior(x, y, q, network_shape, precisions) ./ 2
