@@ -2,7 +2,10 @@
 Bayesian Neural Networks for binary classifcation.
 The Hamiltonian Monte Carlo algorithm is used for posterior inference.
 
-Functions: nn_forward, nn_predict, unpack and the example for classification are taken from the tutorial on Bayesian neural networks of the Turing language. https://turing.ml/
+The data for classification example are taken from the tutorial on Bayesian neural networks of the [Turing](https://turing.ml/) Probabilistic Language.
 
-In the future, more MCMC algorithms will be added and multiclass classification as well as regression capabilities will be implemented.
+## To do
+1. Modify the log-posterior to perform regression tasks.
+2. Re-implement the sampler using the interface of an ```AbstractSampler``` from [```AbstractMCMC```](https://github.com/cmerkatas/AbstractMCMC.jl) package.
+
 
