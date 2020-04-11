@@ -2,7 +2,7 @@
 Bayesian Neural Networks for binary classifcation.
 The Hamiltonian Monte Carlo algorithm is used for posterior inference.
 
-The data for classification example are taken from the tutorial on Bayesian neural networks of the [Turing](https://turing.ml/) Probabilistic Language.
+The data for classification example are taken from the tutorial on Bayesian neural networks of the [Turing](https://turing.ml/) PPL.
 
 ## To do
 1. Modify the log-posterior to perform regression tasks.
