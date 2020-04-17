@@ -20,7 +20,7 @@ end
 """
 Evaluate network on input x
 """
-function nn_forward(net::network, x) # network always outputs layer is always linear
+function nn_forward(net::network, x) 
     for (w, b, h) in zip(net.weights, net.biases, net.transfers[2:end])
         x = h.(w*x .+ b)
     end
