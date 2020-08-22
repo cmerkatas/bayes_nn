@@ -3,7 +3,8 @@ using Flux: onehotbatch, Zygote
 using AdvancedHMC
 using LinearAlgebra
 using Plots
-
+include("turing_data.jl")
+include("utils.jl")
 struct BayesNNet{N, P, RE}
     nnet::N
     p::P
@@ -34,8 +35,7 @@ function ℒ(p)
         0.5*norm(p)^2 / prior_sigma^2
 end
 
-ℒ(bnn.p)
-gs=gradient(p->ℒ(p),bnn.p)[1]
+
 
 # Set the number of samples to draw and warmup iterations
 n_samples, n_adapts = 6_000, 2_000
