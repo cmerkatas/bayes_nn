@@ -28,6 +28,6 @@ function plot_data()
     x2 = map(e -> e[1], xt0s)
     y2 = map(e -> e[2], xt0s)
 
-    Plots.scatter(x1,y1, color="red", clim = (0,1))
-    Plots.scatter!(x2, y2, color="blue", clim = (0,1))
+    Plots.scatter(x1,y1, color="blue", clim = (0,1))
+    Plots.scatter!(x2, y2, color="red", clim = (0,1))
 end
