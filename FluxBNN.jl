@@ -37,7 +37,6 @@ function ℒ(p)
 end
 
 
-
 # Set the number of samples to draw and warmup iterations
 n_samples, n_adapts = 6_000, 2_000
 
