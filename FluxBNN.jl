@@ -5,6 +5,7 @@ using LinearAlgebra
 using Plots
 include("turing_data.jl")
 include("utils.jl")
+
 struct BayesNNet{N, P, RE}
     nnet::N
     p::P
@@ -46,7 +47,7 @@ D = length(bnn.p)
 metric = DiagEuclideanMetric(D)
 hamiltonian = Hamiltonian(metric, ℒ, Zygote)
 
-Random.seed!(123)
+Random.seed!(1)
 initial_p = randn(D)
 # Define a leapfrog solver, with initial step size chosen heuristically
 initial_ϵ = find_good_stepsize(hamiltonian, initial_p)
@@ -66,15 +67,13 @@ Random.seed!(123)
 samples, stats = sample(hamiltonian, proposal, initial_p, n_samples, adaptor, n_adapts;
                                   drop_warmup=true, progress=true)
 sampled_vals = hcat(samples...)
-plot(sampled_vals[8,:], seriestype=:histogram)
-
 
 # define test set
 x_range = collect(range(-6,stop=6,length=25))
 y_range = collect(range(-6,stop=6,length=25))
 n_end = size(sampled_vals, 2)
-anim = @gif for i=1:10:n_end
+anim = @gif for i=1:20:n_end
     plot_data();
     Z = [bnn([x, y], sampled_vals[:,i]) for x=x_range, y=y_range]
     contour!(x_range, y_range, cell2array(Z), title="Iteration $i", clim = (0,1));
-end every 10;
+end every 30;
