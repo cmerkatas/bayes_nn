@@ -29,6 +29,8 @@ bnn = BayesNNet(net_topology)
 
 x_train = Flux.normalise(X,dims=2)
 y_train = onehotbatch(Y, 0:1)
+
+# log posterior density
 alpha = 0.09
 prior_sigma = sqrt(1/alpha)
 function ℒ(p)
@@ -41,13 +43,13 @@ end
 n_samples, n_adapts = 6_000, 2_000
 
 # Define a Hamiltonian system
-
 D = length(bnn.p)
 metric = DiagEuclideanMetric(D)
 hamiltonian = Hamiltonian(metric, ℒ, Zygote)
 
 Random.seed!(1)
 initial_p = randn(D)
+
 # Define a leapfrog solver, with initial step size chosen heuristically
 initial_ϵ = find_good_stepsize(hamiltonian, initial_p)
 integrator = Leapfrog(initial_ϵ)
@@ -64,8 +66,7 @@ adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.4, integra
 #   - `stats` will store diagnostic statistics for each sample
 Random.seed!(123)
 samples, stats = sample(hamiltonian, proposal, initial_p, n_samples, adaptor, n_adapts;
-                                  drop_warmup=true, progress=true)
-sampled_vals = hcat(samples...)
+                        drop_warmup=true, progress=true)
 
 # define test set
 x_range = collect(range(-6,stop=6,length=25))
@@ -73,6 +74,6 @@ y_range = collect(range(-6,stop=6,length=25))
 n_end = size(sampled_vals, 2)
 anim = @gif for i=1:20:n_end
     plot_data();
-    Z = [bnn([x, y], sampled_vals[:,i]) for x=x_range, y=y_range]
+    Z = [bnn([x, y], samples[i]) for x=x_range, y=y_range]
     contour!(x_range, y_range, cell2array(Z), title="Iteration $i", clim = (0,1));
 end every 30;
