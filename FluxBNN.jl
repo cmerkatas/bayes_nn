@@ -4,13 +4,12 @@ using AdvancedHMC
 using LinearAlgebra
 using Plots
 include("turing_data.jl")
-include("utils.jl")
 
 struct BayesNNet{N, P, RE}
     nnet::N
     p::P
     re::RE
-
+    
     function BayesNNet(nnet;p = nothing)
         _p, re = Flux.destructure(nnet)
         if p === nothing
@@ -74,6 +73,6 @@ y_range = collect(range(-6,stop=6,length=25))
 n_end = size(sampled_vals, 2)
 anim = @gif for i=1:20:n_end
     plot_data();
-    Z = [bnn([x, y], samples[i]) for x=x_range, y=y_range]
-    contour!(x_range, y_range, cell2array(Z), title="Iteration $i", clim = (0,1));
+    Z = [bnn([x, y], samples[i])[1] for x=x_range, y=y_range]
+    contour!(x_range, y_range, Z, title="Iteration $i", clim = (0,1));
 end every 30;
