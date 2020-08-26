@@ -63,12 +63,12 @@ adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(initial_ϵ, 
 #   - `stats` will store diagnostic statistics for each sample
 Random.seed!(123)
 samples, stats = sample(hamiltonian, proposal, initial_p, n_samples, adaptor, n_adapts;
-                        drop_warmup=true, progress=true)
+                        drop_warmup=true, progress=false)
 
 # define test set
 x_range = collect(range(-6,stop=6,length=25))
 y_range = collect(range(-6,stop=6,length=25))
-n_end = size(sampled_vals, 2)
+n_end = size(samples, 1)
 anim = @gif for i=1:20:n_end
     plot_data();
     Z = [bnn([x, y], samples[i])[1] for x=x_range, y=y_range]
