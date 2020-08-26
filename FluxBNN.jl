@@ -9,7 +9,7 @@ struct BayesNNet{N, P, RE}
     nnet::N
     p::P
     re::RE
-    
+
     function BayesNNet(nnet;p = nothing)
         _p, re = Flux.destructure(nnet)
         if p === nothing
@@ -24,7 +24,6 @@ end
 
 net_topology = Chain(Dense(2,3,tanh), Dense(3,2,tanh), Dense(2,2,σ))
 bnn = BayesNNet(net_topology)
-# bnn(x)
 
 x_train = Flux.normalise(X,dims=2)
 y_train = onehotbatch(Y, 0:1)
@@ -36,7 +35,6 @@ function ℒ(p)
     -sum(Flux.binarycrossentropy.(bnn(x_train, p), y_train)) -
         0.5*norm(p)^2 / prior_sigma^2
 end
-
 
 # Set the number of samples to draw and warmup iterations
 n_samples, n_adapts = 6_000, 2_000
@@ -58,7 +56,7 @@ integrator = Leapfrog(initial_ϵ)
 #   - generalised No-U-Turn criteria, and
 #   - windowed adaption for step-size and diagonal mass matrix
 proposal = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
-adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.4, integrator))
+adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(initial_ϵ, integrator))
 
 # Run the sampler to draw samples from the specified Gaussian, where
 #   - `samples` will store the samples
